@@ -1,4 +1,4 @@
-package br.com.gtech.pdf.image;
+package com.jasperassistant.designer.viewer.pdf.image;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DirectColorModel;
