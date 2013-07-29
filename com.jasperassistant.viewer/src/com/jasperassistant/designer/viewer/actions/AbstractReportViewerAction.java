@@ -18,8 +18,8 @@
  */
 package com.jasperassistant.designer.viewer.actions;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.jface.action.Action;
-import org.eclipse.jface.util.Assert;
 import org.eclipse.swt.custom.BusyIndicator;
 
 import com.jasperassistant.designer.viewer.IReportViewer;
@@ -31,8 +31,7 @@ import com.jasperassistant.designer.viewer.ReportViewerEvent;
  * 
  * @author Peter Severin (peter_p_s@users.sourceforge.net)
  */
-public abstract class AbstractReportViewerAction extends Action implements
-		IReportViewerListener {
+public abstract class AbstractReportViewerAction extends Action implements IReportViewerListener {
 
 	private IReportViewer reportViewer;
 
@@ -79,7 +78,8 @@ public abstract class AbstractReportViewerAction extends Action implements
 	/**
 	 * @see com.jasperassistant.designer.viewer.IReportViewerListener#viewerStateChanged(com.jasperassistant.designer.viewer.ReportViewerEvent)
 	 */
-	public void viewerStateChanged(ReportViewerEvent evt) {
+	@Override
+    public void viewerStateChanged(ReportViewerEvent evt) {
 		setEnabled(calculateEnabled());
 	}
 
@@ -95,9 +95,11 @@ public abstract class AbstractReportViewerAction extends Action implements
 	/**
 	 * @see org.eclipse.jface.action.Action#run()
 	 */
-	public void run() {
+	@Override
+    public void run() {
 		BusyIndicator.showWhile(null, new Runnable() {
-			public void run() {
+			@Override
+            public void run() {
 				runBusy();
 			}
 		});

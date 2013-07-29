@@ -44,14 +44,11 @@ import com.jasperassistant.designer.viewer.pdf.PDFReader;
  */
 public class PrintAction extends AbstractReportViewerAction {
 
-	private static final ImageDescriptor ICON = ImageDescriptor.createFromFile(
-			PrintAction.class, "images/print.gif"); //$NON-NLS-1$
+	private static final ImageDescriptor ICON = ImageDescriptor.createFromFile(PrintAction.class, "images/print.gif"); //$NON-NLS-1$
 
-	private static final ImageDescriptor DISABLED_ICON = ImageDescriptor
-			.createFromFile(PrintAction.class, "images/printd.gif"); //$NON-NLS-1$
+	private static final ImageDescriptor DISABLED_ICON = ImageDescriptor.createFromFile(PrintAction.class, "images/printd.gif"); //$NON-NLS-1$
 
-    private static final File TEMP_DIR = new File(System
-            .getProperty("java.io.tmpdir"));
+    private static final File TEMP_DIR = new File(System.getProperty("java.io.tmpdir"));
 
     private static final String PDF_EXTENSION = ".pdf";
 
@@ -103,14 +100,8 @@ public class PrintAction extends AbstractReportViewerAction {
 					}
 				} catch (Throwable e) {
 					e.printStackTrace();
-					MessageDialog
-							.openError(
-									display.getActiveShell(),
-									Messages.getString("PrintAction.printingError.title"), //$NON-NLS-1$
-									MessageFormat
-											.format(
-													Messages
-															.getString("PrintAction.printingError.message"), new Object[] { e.getMessage() })); //$NON-NLS-1$
+                    MessageDialog.openError(display.getActiveShell(), Messages.getString("PrintAction.printingError.title"), //$NON-NLS-1$
+                            MessageFormat.format(Messages.getString("PrintAction.printingError.message"), new Object[] { e.getMessage() })); //$NON-NLS-1$
 				}
 			}
 		});
