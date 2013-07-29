@@ -44,7 +44,8 @@ public class StatusBar implements IReportViewerAware {
 
 	/** Viewer model change listener */
 	private IReportViewerListener listener = new IReportViewerListener() {
-		public void viewerStateChanged(ReportViewerEvent evt) {
+		@Override
+        public void viewerStateChanged(ReportViewerEvent evt) {
 			refresh();
 		}
 	};
@@ -91,17 +92,15 @@ public class StatusBar implements IReportViewerAware {
 		if (viewer == null || !viewer.hasDocument()) {
 			label.setText(""); //$NON-NLS-1$
 		} else {
-			label.setText(MessageFormat.format(Messages
-					.getString("StatusBar.pageMofN"), new Object[] { //$NON-NLS-1$
-					new Integer(viewer.getPageIndex() + 1),
-					new Integer(viewer.getDocument().getPages().size()) }));
+            label.setText(MessageFormat.format(Messages.getString("StatusBar.pageMofN"), new Object[] {new Integer(viewer.getPageIndex() + 1), new Integer(viewer.getDocument().getPageCount()) })); //$NON-NLS-1$
 		}
 	}
 
 	/**
 	 * @see com.jasperassistant.designer.viewer.IReportViewerAware#setReportViewer(com.jasperassistant.designer.viewer.IReportViewer)
 	 */
-	public void setReportViewer(IReportViewer viewer) {
+	@Override
+    public void setReportViewer(IReportViewer viewer) {
 		if (viewer != null)
 			viewer.removeReportViewerListener(listener);
 		this.viewer = viewer;
@@ -113,7 +112,8 @@ public class StatusBar implements IReportViewerAware {
 	/**
 	 * @see com.jasperassistant.designer.viewer.IReportViewerAware#getReportViewer()
 	 */
-	public IReportViewer getReportViewer() {
+	@Override
+    public IReportViewer getReportViewer() {
 		return viewer;
 	}
 }

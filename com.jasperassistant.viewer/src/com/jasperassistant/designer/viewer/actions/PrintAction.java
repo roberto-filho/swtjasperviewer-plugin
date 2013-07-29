@@ -34,6 +34,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 
 import com.jasperassistant.designer.viewer.IReportViewer;
+import com.jasperassistant.designer.viewer.pdf.PDFReader;
 
 /**
  * Print action.
@@ -69,6 +70,7 @@ public class PrintAction extends AbstractReportViewerAction {
 	/**
 	 * @see com.jasperassistant.designer.viewer.actions.AbstractReportViewerAction#calculateEnabled()
 	 */
+	@Override
 	protected boolean calculateEnabled() {
 		return getReportViewer().hasDocument();
 	}
@@ -76,33 +78,35 @@ public class PrintAction extends AbstractReportViewerAction {
 	/**
 	 * @see com.jasperassistant.designer.viewer.actions.AbstractReportViewerAction#run()
 	 */
+	@Override
 	public void run() {
 		final Display display = Display.getCurrent();
 		display.asyncExec(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					if("carbon".equals(SWT.getPlatform())) {
                         Random random = new Random();
                         int integer = random.nextInt();
-                        final String reportName = getReportViewer()
-                                .getDocument().getName();
-                        final String fileName = reportName + integer
-                                + PDF_EXTENSION;
+                        final String reportName = getReportViewer().getDocument().getName();
+                        final String fileName = reportName + integer + PDF_EXTENSION;
                         final File file = new File(TEMP_DIR, fileName);
                         file.deleteOnExit();
                         exportAsPDF(file);
                         openPDF(file);
 					} else {
-						JasperPrintManager.printReport(getReportViewer()
-								.getDocument(), true);
+//						JasperPrintManager.printReport(getReportViewer().getDocument().getInputStream(), true);
+					    if(getReportViewer().getDocument().isJasper())
+					        JasperPrintManager.printReport(getReportViewer().getDocument().getJasper(), true);
+					    else if(getReportViewer().getDocument().isPDF())
+					        JasperPrintManager.printReport(PDFReader.class.cast(getReportViewer().getDocument().getPDF()).getInputStream(), true);
 					}
 				} catch (Throwable e) {
 					e.printStackTrace();
 					MessageDialog
 							.openError(
 									display.getActiveShell(),
-									Messages
-											.getString("PrintAction.printingError.title"), //$NON-NLS-1$
+									Messages.getString("PrintAction.printingError.title"), //$NON-NLS-1$
 									MessageFormat
 											.format(
 													Messages
@@ -124,8 +128,7 @@ public class PrintAction extends AbstractReportViewerAction {
      */
     private void exportAsPDF(final File file) throws JRException {
         JRPdfExporter exporter = new JRPdfExporter();
-        exporter.setParameter(JRExporterParameter.JASPER_PRINT,
-                getReportViewer().getDocument());
+        exporter.setParameter(JRExporterParameter.JASPER_PRINT, getReportViewer().getDocument());
         exporter.setParameter(JRExporterParameter.OUTPUT_FILE, file);
         exporter.exportReport();
     }

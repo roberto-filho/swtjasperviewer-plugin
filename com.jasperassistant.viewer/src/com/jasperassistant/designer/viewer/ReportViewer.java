@@ -18,6 +18,7 @@
  */
 package com.jasperassistant.designer.viewer;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +36,10 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
+import com.jasperassistant.designer.viewer.documents.JasperReportWrapper;
+import com.jasperassistant.designer.viewer.documents.PDFDocumentWrapper;
+import com.jasperassistant.designer.viewer.pdf.PDFReader;
+
 /**
  * SWT based report viewer implementation.
  * 
@@ -42,12 +47,11 @@ import org.eclipse.swt.widgets.Control;
  */
 public class ReportViewer implements IReportViewer {
 
-	private static final double[] DEFAULT_ZOOM_LEVELS = new double[] { 0.5f,
-			0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.0f };
+	private static final double[] DEFAULT_ZOOM_LEVELS = new double[] { 0.5f, 0.75f, 1.0f, 1.25f, 1.50f, 1.75f, 2.0f };
 
 	private EventListenerList listenerList = new EventListenerList();
 
-	private JasperPrint document;
+	private IReportDocument document;
 
 	private String reason;
 
@@ -67,7 +71,7 @@ public class ReportViewer implements IReportViewer {
 
 	private ViewerCanvas viewerComposite;
 
-	private List hyperlinkListeners;
+	private List<JRHyperlinkListener> hyperlinkListeners;
 
 	/**
 	 * Default constructor. The default style will be used for the SWT control
@@ -92,22 +96,35 @@ public class ReportViewer implements IReportViewer {
 	 */
 	@Override
 	public void setDocument(JasperPrint document) {
-		Assert.isNotNull(document, Messages.getString("ReportViewer.documentNotNull")); //$NON-NLS-1$
-		Assert.isNotNull(document.getPages(), Messages.getString("ReportViewer.documentNotEmpty")); //$NON-NLS-1$
-		Assert.isTrue(!document.getPages().isEmpty(), Messages.getString("ReportViewer.documentNotEmpty")); //$NON-NLS-1$
-
-		this.document = document;
-		this.reason = null;
-		this.pageIndex = Math.min(Math.max(0, pageIndex), getPageCount() - 1);
-		setZoomInternal(computeZoom());
-		fireViewerModelChanged();
+		initialize(new JasperReportWrapper(document));
+	}
+	
+	private void initialize(IReportDocument doc) {
+	    Assert.isNotNull(doc.getUnderlying(), Messages.getString("ReportViewer.documentNotNull")); //$NON-NLS-1$
+	    
+        if(doc.isJasper()) {
+            JasperPrint jprint = doc.getJasper();
+            Assert.isNotNull(jprint.getPages(), Messages.getString("ReportViewer.documentNotEmpty")); //$NON-NLS-1$
+            Assert.isTrue(!jprint.getPages().isEmpty(), Messages.getString("ReportViewer.documentNotEmpty")); //$NON-NLS-1$
+        }
+        
+        this.document = doc;
+        this.reason = null;
+        this.pageIndex = Math.min(Math.max(0, pageIndex), getPageCount() - 1);
+        setZoomInternal(computeZoom());
+        fireViewerModelChanged();
+	}
+	
+	@Override
+	public void setDocument(InputStream document) {
+	    initialize(new PDFDocumentWrapper(new PDFReader(document)));
 	}
 
 	/**
 	 * @see com.jasperassistant.designer.viewer.IReportViewer#getDocument()
 	 */
 	@Override
-	public JasperPrint getDocument() {
+	public IReportDocument getDocument() {
 		return document;
 	}
 
@@ -194,28 +211,19 @@ public class ReportViewer implements IReportViewer {
 
 	private double computeZoom() {
 		switch (zoomMode) {
-		case ZOOM_MODE_ACTUAL_SIZE:
-			return 1.0;
-		case ZOOM_MODE_FIT_WIDTH: {
-			double ratio = ratio(viewerComposite.getFitSize().x, document
-					.getPageWidth());
-			return ratio(viewerComposite.getFitSize((int) (document
-					.getPageWidth() * ratio),
-					(int) (document.getPageHeight() * ratio)).x, document
-					.getPageWidth());
-		}
-		case ZOOM_MODE_FIT_HEIGHT: {
-			double ratio = ratio(viewerComposite.getFitSize().y, document
-					.getPageHeight());
-			return ratio(viewerComposite.getFitSize((int) (document
-					.getPageWidth() * ratio),
-					(int) (document.getPageHeight() * ratio)).y, document
-					.getPageHeight());
-		}
-		case ZOOM_MODE_FIT_PAGE:
-			Point fitSize = viewerComposite.getFitSize();
-			return Math.min(ratio(fitSize.x, document.getPageWidth()), ratio(
-					fitSize.y, document.getPageHeight()));
+			case ZOOM_MODE_ACTUAL_SIZE:
+				return 1.0;
+			case ZOOM_MODE_FIT_WIDTH: {
+				double ratio = ratio(viewerComposite.getFitSize().x, document.getPageWidth(pageIndex));
+				return ratio(viewerComposite.getFitSize((int) (document.getPageWidth(pageIndex) * ratio), (int) (document.getPageHeight(pageIndex) * ratio)).x, document.getPageWidth(pageIndex));
+			}
+			case ZOOM_MODE_FIT_HEIGHT: {
+				double ratio = ratio(viewerComposite.getFitSize().y, document.getPageHeight(pageIndex));
+				return ratio(viewerComposite.getFitSize((int) (document.getPageWidth(pageIndex) * ratio), (int) (document.getPageHeight(pageIndex) * ratio)).y, document.getPageHeight(pageIndex));
+			}
+			case ZOOM_MODE_FIT_PAGE:
+				Point fitSize = viewerComposite.getFitSize();
+				return Math.min(ratio(fitSize.x, document.getPageWidth(pageIndex)), ratio(fitSize.y, document.getPageHeight(pageIndex)));
 		}
 
 		return zoom;
@@ -234,7 +242,7 @@ public class ReportViewer implements IReportViewer {
 	}
 
 	private int getPageCount() {
-		return document == null ? 0 : document.getPages().size();
+		return document == null ? 0 : document.getPageCount();
 	}
 
 	/**
@@ -516,7 +524,7 @@ public class ReportViewer implements IReportViewer {
 	@Override
 	public void addHyperlinkListener(JRHyperlinkListener listener) {
 		if (hyperlinkListeners == null) {
-			hyperlinkListeners = new ArrayList();
+			hyperlinkListeners = new ArrayList<JRHyperlinkListener>();
 		} else {
 			hyperlinkListeners.remove(listener); // add once
 		}
@@ -539,8 +547,6 @@ public class ReportViewer implements IReportViewer {
 	@Override
 	public JRHyperlinkListener[] getHyperlinkListeners() {
 		return hyperlinkListeners == null ? new JRHyperlinkListener[0]
-				: (JRHyperlinkListener[]) hyperlinkListeners
-						.toArray(new JRHyperlinkListener[hyperlinkListeners
-								.size()]);
+				: hyperlinkListeners.toArray(new JRHyperlinkListener[hyperlinkListeners.size()]);
 	}
 }

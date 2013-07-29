@@ -30,7 +30,6 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
-import net.sf.jasperreports.engine.JRHyperlink;
 import net.sf.jasperreports.engine.JRImageMapRenderer;
 import net.sf.jasperreports.engine.JRPrintAnchorIndex;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -42,9 +41,10 @@ import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporterParameter;
+import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.view.JRHyperlinkListener;
 
-import org.eclipse.jface.util.Assert;
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.swt.graphics.Cursor;
@@ -60,6 +60,8 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
 
+import com.jasperassistant.designer.viewer.documents.JasperReportWrapper;
+import com.jasperassistant.designer.viewer.pdf.PDFReader;
 import com.jasperassistant.designer.viewer.util.Compatibility;
 
 /**
@@ -91,7 +93,7 @@ class ViewerCanvas extends Canvas {
 
     private JRPrintPage page;
 
-    private List hyperlinkElements = new ArrayList();
+    private List<IHyperlinkContainer> hyperlinkElements = new ArrayList<IHyperlinkContainer>();
 
     private Image reportImage;
 
@@ -112,13 +114,15 @@ class ViewerCanvas extends Canvas {
     private IReportViewer viewer;
 
     private Listener eventListener = new Listener() {
-        public void handleEvent(Event event) {
+        @Override
+		public void handleEvent(Event event) {
             ViewerCanvas.this.handleEvent(event);
         }
     };
 
     private IReportViewerListener listener = new IReportViewerListener() {
-        public void viewerStateChanged(ReportViewerEvent evt) {
+        @Override
+		public void viewerStateChanged(ReportViewerEvent evt) {
             refresh();
         }
     };
@@ -293,7 +297,8 @@ class ViewerCanvas extends Canvas {
     /**
      * @see org.eclipse.swt.widgets.Composite#computeSize(int, int, boolean)
      */
-    public Point computeSize(int wHint, int hHint, boolean changed) {
+    @Override
+	public Point computeSize(int wHint, int hHint, boolean changed) {
         Point size = new Point(0, 0);
         Rectangle contentBounds = getContentBounds();
 
@@ -340,8 +345,9 @@ class ViewerCanvas extends Canvas {
         } else if (viewer.hasDocument()) {
             try {
                 Image image = renderPage();
-                refresh(image, null, (JRPrintPage) viewer.getDocument().getPages().get(
-                        viewer.getPageIndex()));
+                boolean isJasper = viewer.getDocument() instanceof JasperReportWrapper;
+                // Se não for jasper, não passa o JRPrintPage, pois ela é usada para mexer com os hyperlinks
+                refresh(image, null, isJasper ? (JRPrintPage) JasperPrint.class.cast(viewer.getDocument().getUnderlying()).getPages().get(viewer.getPageIndex()) : null);
             } catch (JRException e) {
                 refresh(null, e.getMessage(), null);
             }
@@ -352,42 +358,50 @@ class ViewerCanvas extends Canvas {
         setFocus();
     }
 
+    
     private Image renderPage() throws JRException {
-        JasperPrint jasperPrint = viewer.getDocument();
-
-        int imageWidth = (int) (jasperPrint.getPageWidth() * viewer.getZoom()) + 1;
-        int imageHeight = (int) (jasperPrint.getPageHeight() * viewer.getZoom()) + 1;
-        BufferedImage awtImage = new BufferedImage(imageWidth, imageHeight,
-                BufferedImage.TYPE_INT_RGB);
-
-        Graphics2D g2d = (Graphics2D) awtImage.getGraphics();
-        try {
-            JRGraphics2DExporter exporter = new JRGraphics2DExporter();
-            exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-            exporter.setParameter(JRGraphics2DExporterParameter.GRAPHICS_2D, g2d);
-            exporter.setParameter(JRExporterParameter.PAGE_INDEX,
-                    new Integer(viewer.getPageIndex()));
-            exporter.setParameter(JRGraphics2DExporterParameter.ZOOM_RATIO, new Float(viewer
-                    .getZoom()));
-            exporter.exportReport();
-        } finally {
-            g2d.dispose();
+        IReportDocument document = viewer.getDocument();
+        
+        if(document.isJasper()) {
+            JasperPrint jasperPrint = document.getJasper();
+    
+            int imageWidth = (int) (jasperPrint.getPageWidth() * viewer.getZoom()) + 1;
+            int imageHeight = (int) (jasperPrint.getPageHeight() * viewer.getZoom()) + 1;
+            BufferedImage awtImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
+    
+            Graphics2D g2d = (Graphics2D) awtImage.getGraphics();
+            try {
+                JRGraphics2DExporter exporter = new JRGraphics2DExporter();
+                exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+                exporter.setParameter(JRGraphics2DExporterParameter.GRAPHICS_2D, g2d);
+                exporter.setParameter(JRExporterParameter.PAGE_INDEX, new Integer(viewer.getPageIndex()));
+                exporter.setParameter(JRGraphics2DExporterParameter.ZOOM_RATIO, new Float(viewer.getZoom()));
+                exporter.exportReport();
+            } finally {
+                g2d.dispose();
+            }
+    
+            // draw border
+            g2d = (Graphics2D) awtImage.getGraphics();
+            try {
+                g2d.setColor(Color.black);
+                g2d.setStroke(new BasicStroke(1));
+                g2d.drawRect(0, 0, imageWidth - 1, imageHeight - 1);
+            } finally {
+                g2d.dispose();
+            }
+    
+            int[] data = ((DataBufferInt) awtImage.getData().getDataBuffer()).getData();
+            ImageData imageData = new ImageData(awtImage.getWidth(), awtImage.getHeight(), 32, palette);
+            imageData.setPixels(0, 0, data.length, data, 0);
+            return new Image(getDisplay(), imageData);
         }
-
-        // draw border
-        g2d = (Graphics2D) awtImage.getGraphics();
-        try {
-            g2d.setColor(Color.black);
-            g2d.setStroke(new BasicStroke(1));
-            g2d.drawRect(0, 0, imageWidth - 1, imageHeight - 1);
-        } finally {
-            g2d.dispose();
+        if(document.isPDF()) {
+            PDFReader pdf = document.getPDF();
+            return new Image(getDisplay(), pdf.setZoom(new Float(viewer.getZoom())).getPageImageData(viewer.getPageIndex()));
         }
-
-        int[] data = ((DataBufferInt) awtImage.getData().getDataBuffer()).getData();
-        ImageData imageData = new ImageData(awtImage.getWidth(), awtImage.getHeight(), 32, palette);
-        imageData.setPixels(0, 0, data.length, data, 0);
-        return new Image(getDisplay(), imageData);
+        
+        return null;
     }
 
     /**
@@ -658,7 +672,8 @@ class ViewerCanvas extends Canvas {
                     setCursor(null);
                     try {
                         BusyIndicator.showWhile(getDisplay(), new Runnable() {
-                            public void run() {
+                            @Override
+							public void run() {
                                 handleHyperlinkClick();
                             }
                         });
@@ -679,12 +694,16 @@ class ViewerCanvas extends Canvas {
     }
 
     private void handleHyperlinkClick() {
+        // Só vai ser executado quando for um Jasper... PDF normal não tem isso
+        if(!viewer.getDocument().isJasper())
+            return;
+        
         JRPrintHyperlink link = currentLink;
 
-        if (link.getHyperlinkType() == JRHyperlink.HYPERLINK_TYPE_REFERENCE) {
+        if (link.getHyperlinkTypeValue().equals(HyperlinkTypeEnum.REFERENCE)) {
             notifyHyperlinkListeners(link);
-        } else if (link.getHyperlinkType() == JRHyperlink.HYPERLINK_TYPE_LOCAL_ANCHOR) {
-            Map anchorIndexes = viewer.getDocument().getAnchorIndexes();
+        } else if (link.getHyperlinkTypeValue().equals(HyperlinkTypeEnum.LOCAL_ANCHOR)) {
+            Map anchorIndexes = viewer.getDocument().getJasper().getAnchorIndexes();
             JRPrintAnchorIndex anchorIndex = (JRPrintAnchorIndex) anchorIndexes.get(currentLink
                     .getHyperlinkAnchor());
             if (anchorIndex != null) {
@@ -699,16 +718,16 @@ class ViewerCanvas extends Canvas {
                     repaint();
                 }
             }
-        } else if (link.getHyperlinkType() == JRHyperlink.HYPERLINK_TYPE_LOCAL_PAGE) {
+        } else if (link.getHyperlinkTypeValue().equals(HyperlinkTypeEnum.LOCAL_PAGE)) {
             if (link.getHyperlinkPage() != null) {
                 int page = link.getHyperlinkPage().intValue();
                 viewer.setPageIndex(page - 1);
             }
-        } else if (link.getHyperlinkType() == JRHyperlink.HYPERLINK_TYPE_REMOTE_ANCHOR) {
+        } else if (link.getHyperlinkTypeValue().equals(HyperlinkTypeEnum.REMOTE_ANCHOR)) {
             notifyHyperlinkListeners(link);
-        } else if (link.getHyperlinkType() == JRHyperlink.HYPERLINK_TYPE_REMOTE_PAGE) {
+        } else if (link.getHyperlinkTypeValue().equals(HyperlinkTypeEnum.REMOTE_PAGE)) {
             notifyHyperlinkListeners(link);
-        } else if (link.getHyperlinkType() == JRHyperlink.HYPERLINK_TYPE_CUSTOM) {
+        } else if (link.getHyperlinkTypeValue().equals(HyperlinkTypeEnum.CUSTOM)) {
             notifyHyperlinkListeners(link);
         }
     }
@@ -806,7 +825,7 @@ class ViewerCanvas extends Canvas {
         hyperlinkElements.clear();
 
         if (page != null) {
-            List elements = page.getElements();
+            List<JRPrintElement> elements = page.getElements();
             try {
                 initializeHyperlinks(0, 0, elements);
             } catch (JRException e) {
@@ -815,23 +834,20 @@ class ViewerCanvas extends Canvas {
         }
     }
 
-    private void initializeHyperlinks(int originX, int originY, List elements) throws JRException {
+    private void initializeHyperlinks(int originX, int originY, List<JRPrintElement> elements) throws JRException {
         if (elements != null) {
-            for (Iterator it = elements.iterator(); it.hasNext();) {
-                JRPrintElement element = (JRPrintElement) it.next();
+            for (Iterator<JRPrintElement> it = elements.iterator(); it.hasNext();) {
+                JRPrintElement element = it.next();
 
                 if (getImageMapRenderer(element) != null) {
-                    List hyperlinks = getImageMapRenderer(element).getImageAreaHyperlinks(
-                            new java.awt.Rectangle(0, 0, element.getWidth(), element.getHeight()));
+                    List<JRPrintImageAreaHyperlink> hyperlinks = getImageMapRenderer(element).getImageAreaHyperlinks(new java.awt.Rectangle(0, 0, element.getWidth(), element.getHeight()));
                     if (hyperlinks != null)
-                        hyperlinkElements.add(new ImageAreaHyperlink(originX + element.getX(),
-                                originY + element.getY(), hyperlinks));
+                        hyperlinkElements.add(new ImageAreaHyperlink(originX + element.getX(), originY + element.getY(), hyperlinks));
                 } else if (element instanceof JRPrintHyperlink
-                        && ((JRPrintHyperlink) element).getHyperlinkType() != JRHyperlink.HYPERLINK_TYPE_NONE) {
+                        && !((JRPrintHyperlink) element).getHyperlinkTypeValue().equals(HyperlinkTypeEnum.NONE)) {
                     hyperlinkElements.add(new PrintHyperlink(originX, originY, element));
                 } else {
-                    initializeHyperlinks(originX + element.getX(), originY + element.getY(),
-                            Compatibility.getChildren(element));
+                    initializeHyperlinks(originX + element.getX(), originY + element.getY(), Compatibility.getChildren(element));
                 }
             }
         }
@@ -869,7 +885,8 @@ class ViewerCanvas extends Canvas {
                     + element.getHeight());
         }
 
-        public JRPrintHyperlink getHyperlink(Point point) {
+        @Override
+		public JRPrintHyperlink getHyperlink(Point point) {
             if (inside(point))
                 return (JRPrintHyperlink) element;
 
@@ -882,20 +899,21 @@ class ViewerCanvas extends Canvas {
 
         private final int originY;
 
-        private final List imageAreaHyperlinks;
+        private final List<JRPrintImageAreaHyperlink> imageAreaHyperlinks;
 
-        public ImageAreaHyperlink(int originX, int originY, List imageAreaHyperlinks) {
+        public ImageAreaHyperlink(int originX, int originY, List<JRPrintImageAreaHyperlink> imageAreaHyperlinks) {
             this.originX = originX;
             this.originY = originY;
             this.imageAreaHyperlinks = imageAreaHyperlinks;
         }
 
-        public JRPrintHyperlink getHyperlink(Point point) {
+        @Override
+		public JRPrintHyperlink getHyperlink(Point point) {
             final int x = point.x - originX;
             final int y = point.y - originY;
 
-            for (Iterator it = imageAreaHyperlinks.iterator(); it.hasNext();) {
-                JRPrintImageAreaHyperlink areaHyperlink = (JRPrintImageAreaHyperlink) it.next();
+            for (Iterator<JRPrintImageAreaHyperlink> it = imageAreaHyperlinks.iterator(); it.hasNext();) {
+                JRPrintImageAreaHyperlink areaHyperlink = it.next();
 
                 if (areaHyperlink.getArea().containsPoint(x, y))
                     return areaHyperlink.getHyperlink();
@@ -913,19 +931,19 @@ class ViewerCanvas extends Canvas {
         if (toolTip != null)
             return toolTip;
 
-        switch (link.getHyperlinkType()) {
-        case JRHyperlink.HYPERLINK_TYPE_REFERENCE:
+        switch (link.getHyperlinkTypeValue()) {
+        case REFERENCE:
             toolTip = link.getHyperlinkReference();
             break;
-        case JRHyperlink.HYPERLINK_TYPE_LOCAL_ANCHOR:
+        case LOCAL_ANCHOR:
             if (link.getHyperlinkAnchor() != null)
                 toolTip = "#" + link.getHyperlinkAnchor(); //$NON-NLS-1$
             break;
-        case JRHyperlink.HYPERLINK_TYPE_LOCAL_PAGE:
+        case LOCAL_PAGE:
             if (link.getHyperlinkPage() != null)
                 toolTip = "#page " + link.getHyperlinkPage(); //$NON-NLS-1$
             break;
-        case JRHyperlink.HYPERLINK_TYPE_REMOTE_ANCHOR:
+        case REMOTE_ANCHOR:
             if (link.getHyperlinkReference() != null || link.getHyperlinkAnchor() != null) {
                 toolTip = ""; //$NON-NLS-1$
                 if (link.getHyperlinkReference() != null)
@@ -934,7 +952,7 @@ class ViewerCanvas extends Canvas {
                     toolTip = toolTip + "#" + currentLink.getHyperlinkAnchor(); //$NON-NLS-1$
             }
             break;
-        case JRHyperlink.HYPERLINK_TYPE_REMOTE_PAGE:
+        case REMOTE_PAGE:
             if (link.getHyperlinkReference() != null || link.getHyperlinkPage() != null) {
                 toolTip = ""; //$NON-NLS-1$
                 if (link.getHyperlinkReference() != null)
@@ -950,13 +968,13 @@ class ViewerCanvas extends Canvas {
 
     private void notifyHyperlinkListeners(JRPrintHyperlink link) {
         JRHyperlinkListener[] listeners = viewer.getHyperlinkListeners();
-        for (int i = 0; i < listeners.length; i++) {
-            try {
-                listeners[i].gotoHyperlink(link);
-            } catch (JRException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        for (JRHyperlinkListener listener : listeners) {
+        	try {
+        		listener.gotoHyperlink(link);
+        	} catch (JRException e) {
+        		throw new RuntimeException(e);
+        	}
+		}
     }
 
 }

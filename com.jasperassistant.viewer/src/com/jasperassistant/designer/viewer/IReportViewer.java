@@ -18,6 +18,8 @@
  */
 package com.jasperassistant.designer.viewer;
 
+import java.io.InputStream;
+
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.view.JRHyperlinkListener;
 
@@ -78,13 +80,19 @@ public interface IReportViewer {
 	 *            document to set. Must be not null.
 	 */
 	public void setDocument(JasperPrint document);
+	
+	/**
+	 * Sets the PDF document stream
+	 * @param document - stream of the pdf file to set
+	 */
+	public void setDocument(InputStream document);
 
 	/**
 	 * Returns the jasper print document
 	 * 
 	 * @return the jasper print docuemnt or null if none
 	 */
-	public JasperPrint getDocument();
+	public IReportDocument getDocument();
 
 	/**
 	 * Returns true if there is a jasper print document set

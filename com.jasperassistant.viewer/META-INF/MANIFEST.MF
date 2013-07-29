@@ -25,4 +25,10 @@ Export-Package: com.jasperassistant.designer.viewer;
    org.eclipse.swt.widgets",
  com.jasperassistant.designer.viewer.util;uses:="net.sf.jasperreports.engine.export,net.sf.jasperreports.engine"
 Bundle-ClassPath: .,
- lib/jasperreports-3.7.5.jar
+ lib/icepdf-core.jar
+Import-Package: net.sf.jasperreports.engine,
+ net.sf.jasperreports.engine.export,
+ net.sf.jasperreports.engine.type,
+ net.sf.jasperreports.engine.util,
+ net.sf.jasperreports.engine.xml,
+ net.sf.jasperreports.view

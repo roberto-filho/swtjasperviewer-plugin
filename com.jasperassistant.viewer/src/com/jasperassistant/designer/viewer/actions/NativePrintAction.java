@@ -45,6 +45,7 @@ import org.eclipse.swt.printing.PrintDialog;
 import org.eclipse.swt.printing.PrinterData;
 import org.eclipse.swt.widgets.Display;
 
+import com.jasperassistant.designer.viewer.IReportDocument;
 import com.jasperassistant.designer.viewer.IReportViewer;
 
 /**
@@ -67,11 +68,9 @@ import com.jasperassistant.designer.viewer.IReportViewer;
  */
 public class NativePrintAction extends AbstractReportViewerAction {
 
-    private static final ImageDescriptor ICON = ImageDescriptor.createFromFile(
-            NativePrintAction.class, "images/print.gif"); //$NON-NLS-1$
+    private static final ImageDescriptor ICON = ImageDescriptor.createFromFile(NativePrintAction.class, "images/print.gif"); //$NON-NLS-1$
 
-    private static final ImageDescriptor DISABLED_ICON = ImageDescriptor.createFromFile(
-            NativePrintAction.class, "images/printd.gif"); //$NON-NLS-1$
+    private static final ImageDescriptor DISABLED_ICON = ImageDescriptor.createFromFile(NativePrintAction.class, "images/printd.gif"); //$NON-NLS-1$
 
     /**
      * @see AbstractReportViewerAction#AbstractReportViewerAction(IReportViewer)
@@ -88,6 +87,7 @@ public class NativePrintAction extends AbstractReportViewerAction {
     /**
      * @see com.jasperassistant.designer.viewer.actions.AbstractReportViewerAction#calculateEnabled()
      */
+    @Override
     protected boolean calculateEnabled() {
         return getReportViewer().hasDocument();
     }
@@ -95,11 +95,12 @@ public class NativePrintAction extends AbstractReportViewerAction {
     /**
      * @see com.jasperassistant.designer.viewer.actions.AbstractReportViewerAction#run()
      */
+    @Override
     public void run() {
         final Display display = Display.getCurrent();
         final PrintDialog dialog = new PrintDialog(display.getActiveShell());
         dialog.setStartPage(1);
-        dialog.setEndPage(getReportViewer().getDocument().getPages().size());
+        dialog.setEndPage(getReportViewer().getDocument().getPageCount());
         final PrinterData printData = dialog.open();
 
         if (printData != null) {
@@ -107,21 +108,21 @@ public class NativePrintAction extends AbstractReportViewerAction {
                 printDocument(display, printData);
             } catch (PrinterException e) {
                 e.printStackTrace();
-                MessageDialog
-                        .openError(
-                                display.getActiveShell(),
+                MessageDialog.openError(display.getActiveShell(),
                                 Messages.getString("PrintAction.printingError.title"), //$NON-NLS-1$
-                                MessageFormat
-                                        .format(
-                                                Messages
-                                                        .getString("PrintAction.printingError.message"), new Object[] { e.getMessage() })); //$NON-NLS-1$
+                                MessageFormat.format(
+                                                Messages.getString("PrintAction.printingError.message"), new Object[] { e.getMessage() })); //$NON-NLS-1$
             }
         }
     }
 
-    private void printDocument(final Display display, final PrinterData printData)
-            throws PrinterException {
-        final JasperPrint document = getReportViewer().getDocument();
+    private void printDocument(final Display display, final PrinterData printData) throws PrinterException {
+        IReportDocument doc = getReportViewer().getDocument();
+        // Se não for jasper... no tem porque continuar
+        if(!doc.isJasper())
+            return;
+        
+        final JasperPrint document = doc.getJasper();
         final int startPage, endPage;
 
         if (printData.scope == PrinterData.ALL_PAGES) {
@@ -144,19 +145,19 @@ public class NativePrintAction extends AbstractReportViewerAction {
 
         printJob.setJobName("JasperReports - " + document.getName());
 
-        switch (document.getOrientation()) {
-        case JRReport.ORIENTATION_LANDSCAPE: {
-            pageFormat.setOrientation(PageFormat.LANDSCAPE);
-            paper.setSize(document.getPageHeight(), document.getPageWidth());
-            paper.setImageableArea(0, 0, document.getPageHeight(), document.getPageWidth());
-            break;
-        }
-        case JRReport.ORIENTATION_PORTRAIT:
-        default: {
-            pageFormat.setOrientation(PageFormat.PORTRAIT);
-            paper.setSize(document.getPageWidth(), document.getPageHeight());
-            paper.setImageableArea(0, 0, document.getPageWidth(), document.getPageHeight());
-        }
+        switch (document.getOrientationValue()) {
+	        case LANDSCAPE: {
+	            pageFormat.setOrientation(PageFormat.LANDSCAPE);
+	            paper.setSize(document.getPageHeight(), document.getPageWidth());
+	            paper.setImageableArea(0, 0, document.getPageHeight(), document.getPageWidth());
+	            break;
+	        }
+	        case PORTRAIT:
+	        default: {
+	            pageFormat.setOrientation(PageFormat.PORTRAIT);
+	            paper.setSize(document.getPageWidth(), document.getPageHeight());
+	            paper.setImageableArea(0, 0, document.getPageWidth(), document.getPageHeight());
+	        }
         }
 
         pageFormat.setPaper(paper);
@@ -193,8 +194,8 @@ public class NativePrintAction extends AbstractReportViewerAction {
             this.startPage = startPage;
         }
 
-        public int print(Graphics graphics, PageFormat pageFormat, int pageIndex)
-                throws PrinterException {
+        @Override
+        public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
             if (Thread.currentThread().isInterrupted()) {
                 throw new PrinterException("Current thread interrupted.");
             }

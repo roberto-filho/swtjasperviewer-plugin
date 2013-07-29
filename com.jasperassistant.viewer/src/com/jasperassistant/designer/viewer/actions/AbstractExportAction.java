@@ -67,7 +67,8 @@ public abstract class AbstractExportAction extends AbstractReportViewerAction {
 	/**
 	 * @see com.jasperassistant.designer.viewer.actions.AbstractReportViewerAction#run()
 	 */
-	public void run() {
+	@Override
+    public void run() {
 		FileDialog dialog = new FileDialog(Display.getCurrent()
 				.getActiveShell(), SWT.SINGLE | SWT.SAVE);
 		if (filterNames != null)
@@ -126,44 +127,38 @@ public abstract class AbstractExportAction extends AbstractReportViewerAction {
 	 *             if an error occurs during the export
 	 * @see #exportWithProgress(File, JRExportProgressMonitor)
 	 */
-	protected void export(final File file) throws Throwable {
-		ProgressMonitorDialog pm = new ProgressMonitorDialog(Display
-				.getCurrent().getActiveShell());
+    protected void export(final File file) throws Throwable {
+        ProgressMonitorDialog pm = new ProgressMonitorDialog(Display.getCurrent().getActiveShell());
 
-		try {
-			pm.run(true, true, new IRunnableWithProgress() {
-				public void run(IProgressMonitor monitor)
-						throws InvocationTargetException, InterruptedException {
-					try {
-						int totalPages = getReportViewer().getDocument()
-								.getPages().size();
-						monitor
-								.beginTask(
-										Messages
-												.getString("AbstractExportAction.taskLabel"), totalPages); //$NON-NLS-1$
-						exportWithProgress(file, new ProgressMonitorAdapter(
-								monitor, totalPages));
-					} catch (Throwable e) {
-						throw new InvocationTargetException(e);
-					} finally {
-						monitor.done();
-					}
-				}
-			});
-		} catch (InvocationTargetException e) {
-			if (pm.getReturnCode() != ProgressMonitorDialog.CANCEL) {
-				throw e;
-			}
-		} catch (InterruptedException e) {
-			if (pm.getReturnCode() != ProgressMonitorDialog.CANCEL) {
-				throw e;
-			}
-		} finally {
-			if (pm.getReturnCode() == ProgressMonitorDialog.CANCEL) {
-				file.delete();
-			}
-		}
-	}
+        try {
+            pm.run(true, true, new IRunnableWithProgress() {
+                @Override
+                public void run(IProgressMonitor monitor) throws InvocationTargetException, InterruptedException {
+                    try {
+                        int totalPages = getReportViewer().getDocument().getPageCount();
+                        monitor.beginTask(Messages.getString("AbstractExportAction.taskLabel"), totalPages); //$NON-NLS-1$
+                        exportWithProgress(file, new ProgressMonitorAdapter(monitor, totalPages));
+                    } catch (Throwable e) {
+                        throw new InvocationTargetException(e);
+                    } finally {
+                        monitor.done();
+                    }
+                }
+            });
+        } catch (InvocationTargetException e) {
+            if (pm.getReturnCode() != ProgressMonitorDialog.CANCEL) {
+                throw e;
+            }
+        } catch (InterruptedException e) {
+            if (pm.getReturnCode() != ProgressMonitorDialog.CANCEL) {
+                throw e;
+            }
+        } finally {
+            if (pm.getReturnCode() == ProgressMonitorDialog.CANCEL) {
+                file.delete();
+            }
+        }
+    }
 
 	/**
 	 * @param defaultFileExtension
@@ -222,8 +217,9 @@ public abstract class AbstractExportAction extends AbstractReportViewerAction {
 	/**
 	 * @see com.jasperassistant.designer.viewer.actions.AbstractReportViewerAction#calculateEnabled()
 	 */
-	protected boolean calculateEnabled() {
-		return getReportViewer().hasDocument();
+	@Override
+    protected boolean calculateEnabled() {
+		return getReportViewer().hasDocument() && getReportViewer().getDocument().isJasper();
 	}
 
 	/**
@@ -260,7 +256,8 @@ class ProgressMonitorAdapter implements JRExportProgressMonitor {
 	/**
 	 * @see net.sf.jasperreports.engine.export.JRExportProgressMonitor#afterPageExport()
 	 */
-	public void afterPageExport() {
+	@Override
+    public void afterPageExport() {
 		monitor.worked(1);
 		if (++currentPage <= totalPages) {
 			updateSubtask();

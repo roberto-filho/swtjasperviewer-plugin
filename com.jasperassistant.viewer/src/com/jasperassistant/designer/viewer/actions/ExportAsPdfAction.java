@@ -36,11 +36,8 @@ import com.jasperassistant.designer.viewer.IReportViewer;
  */
 public class ExportAsPdfAction extends AbstractExportAction {
 
-	private static final ImageDescriptor ICON = ImageDescriptor.createFromFile(
-			ExportAsPdfAction.class, "images/save.gif"); //$NON-NLS-1$
-
-	private static final ImageDescriptor DISABLED_ICON = ImageDescriptor
-			.createFromFile(ExportAsPdfAction.class, "images/saved.gif"); //$NON-NLS-1$
+	private static final ImageDescriptor ICON = ImageDescriptor.createFromFile(ExportAsPdfAction.class, "images/save.gif"); //$NON-NLS-1$
+	private static final ImageDescriptor DISABLED_ICON = ImageDescriptor.createFromFile(ExportAsPdfAction.class, "images/saved.gif"); //$NON-NLS-1$
 
 	/**
 	 * @see AbstractExportAction#AbstractExportAction(IReportViewer)
@@ -61,11 +58,10 @@ public class ExportAsPdfAction extends AbstractExportAction {
 	/**
 	 * @see com.jasperassistant.designer.viewer.actions.AbstractExportAction#exportWithProgress(java.io.File, net.sf.jasperreports.engine.export.JRExportProgressMonitor)
 	 */
-	protected void exportWithProgress(File file, JRExportProgressMonitor monitor)
-			throws JRException {
+	@Override
+	protected void exportWithProgress(File file, JRExportProgressMonitor monitor) throws JRException {
 		JRPdfExporter exporter = new JRPdfExporter();
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT,
-				getReportViewer().getDocument());
+		exporter.setParameter(JRExporterParameter.JASPER_PRINT, getReportViewer().getDocument().getJasper());
 		exporter.setParameter(JRExporterParameter.OUTPUT_FILE, file);
 		exporter.setParameter(JRExporterParameter.PROGRESS_MONITOR, monitor);
 		exporter.exportReport();

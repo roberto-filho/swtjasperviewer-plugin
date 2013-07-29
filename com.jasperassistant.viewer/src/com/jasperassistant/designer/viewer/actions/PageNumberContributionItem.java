@@ -20,8 +20,8 @@ package com.jasperassistant.designer.viewer.actions;
 
 import java.text.MessageFormat;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.jface.action.ContributionItem;
-import org.eclipse.jface.util.Assert;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.custom.BusyIndicator;
@@ -105,20 +105,24 @@ public class PageNumberContributionItem extends ContributionItem implements IRep
                 new Integer(m), new Integer(n) });
     }
 
+    @Override
     public void dispose() {
         viewer.removeReportViewerListener(this);
         text = null;
         viewer = null;
     }
 
+    @Override
     public final void fill(Composite parent) {
         createControl(parent);
     }
 
+    @Override
     public final void fill(Menu parent, int index) {
         Assert.isTrue(false, "Can't add page number to a menu");//$NON-NLS-1$
     }
 
+    @Override
     public void fill(ToolBar parent, int index) {
         toolitem = new ToolItem(parent, SWT.SEPARATOR, index);
         Control control = createControl(parent);
@@ -136,6 +140,7 @@ public class PageNumberContributionItem extends ContributionItem implements IRep
         try {
             final int pageIndex = Integer.parseInt(pageText) - 1;
             BusyIndicator.showWhile(null, new Runnable() {
+                @Override
                 public void run() {
                     viewer.setPageIndex(pageIndex);
                 }
@@ -150,13 +155,15 @@ public class PageNumberContributionItem extends ContributionItem implements IRep
     }
 
     private String getPageMofNText() {
-        return formatPageMofN(viewer.getPageIndex() + 1, viewer.getDocument().getPages().size());
+        return formatPageMofN(viewer.getPageIndex() + 1, viewer.getDocument().getPageCount());
     }
 
+    @Override
     public void viewerStateChanged(ReportViewerEvent evt) {
         refresh();
     }
 
+    @Override
     public void handleEvent(Event event) {
         switch (event.type) {
         case SWT.Selection:

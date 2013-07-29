@@ -20,8 +20,8 @@ package com.jasperassistant.designer.viewer.actions;
 
 import java.text.MessageFormat;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.jface.action.ContributionItem;
-import org.eclipse.jface.util.Assert;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Composite;
@@ -40,8 +40,7 @@ import com.jasperassistant.designer.viewer.ReportViewerEvent;
  * 
  * @author Peter Severin (peter_p_s@users.sourceforge.net)
  */
-public class StatusContributionItem extends ContributionItem implements
-		IReportViewerListener {
+public class StatusContributionItem extends ContributionItem implements IReportViewerListener {
 
 	private IReportViewer viewer;
 
@@ -92,7 +91,8 @@ public class StatusContributionItem extends ContributionItem implements
 	/**
 	 * @see org.eclipse.jface.action.ContributionItem#dispose()
 	 */
-	public void dispose() {
+	@Override
+    public void dispose() {
 		viewer.removeReportViewerListener(this);
 		label = null;
 		viewer = null;
@@ -101,7 +101,8 @@ public class StatusContributionItem extends ContributionItem implements
 	/**
 	 * @see org.eclipse.jface.action.IContributionItem#fill(org.eclipse.swt.widgets.Composite)
 	 */
-	public final void fill(Composite parent) {
+	@Override
+    public final void fill(Composite parent) {
 		createControl(parent);
 	}
 
@@ -109,7 +110,8 @@ public class StatusContributionItem extends ContributionItem implements
 	 * @see org.eclipse.jface.action.IContributionItem#fill(org.eclipse.swt.widgets.Menu,
 	 *      int)
 	 */
-	public final void fill(Menu parent, int index) {
+	@Override
+    public final void fill(Menu parent, int index) {
 		Assert.isTrue(false, Messages.getString("StatusContributionItem.cannotAddToMenu")); //$NON-NLS-1$
 	}
 
@@ -117,7 +119,8 @@ public class StatusContributionItem extends ContributionItem implements
 	 * @see org.eclipse.jface.action.IContributionItem#fill(org.eclipse.swt.widgets.ToolBar,
 	 *      int)
 	 */
-	public void fill(ToolBar parent, int index) {
+	@Override
+    public void fill(ToolBar parent, int index) {
 		toolitem = new ToolItem(parent, SWT.SEPARATOR, index);
 		Control control = createControl(parent);
 		toolitem.setWidth(label.getSize().x);
@@ -127,7 +130,8 @@ public class StatusContributionItem extends ContributionItem implements
 	/**
 	 * @see com.jasperassistant.designer.viewer.IReportViewerListener#viewerStateChanged(com.jasperassistant.designer.viewer.ReportViewerEvent)
 	 */
-	public void viewerStateChanged(ReportViewerEvent evt) {
+	@Override
+    public void viewerStateChanged(ReportViewerEvent evt) {
 		refresh();
 	}
 
@@ -140,8 +144,7 @@ public class StatusContributionItem extends ContributionItem implements
 							.getString("StatusContributionItem.pageMofN"), //$NON-NLS-1$
 							new Object[] {
 									new Integer(viewer.getPageIndex() + 1),
-									new Integer(viewer.getDocument().getPages()
-											.size()) });
+									new Integer(viewer.getDocument().getPageCount()) });
 		}
 	}
 
