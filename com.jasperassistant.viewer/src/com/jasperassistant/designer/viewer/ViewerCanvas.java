@@ -62,6 +62,7 @@ import org.eclipse.swt.widgets.ScrollBar;
 
 import com.jasperassistant.designer.viewer.documents.JasperReportWrapper;
 import com.jasperassistant.designer.viewer.pdf.PDFReader;
+import com.jasperassistant.designer.viewer.pdf.image.SWTUtil;
 import com.jasperassistant.designer.viewer.util.Compatibility;
 
 /**
@@ -382,14 +383,7 @@ class ViewerCanvas extends Canvas {
             }
     
             // draw border
-            g2d = (Graphics2D) awtImage.getGraphics();
-            try {
-                g2d.setColor(Color.black);
-                g2d.setStroke(new BasicStroke(1));
-                g2d.drawRect(0, 0, imageWidth - 1, imageHeight - 1);
-            } finally {
-                g2d.dispose();
-            }
+            drawBorder(awtImage);
     
             int[] data = ((DataBufferInt) awtImage.getData().getDataBuffer()).getData();
             ImageData imageData = new ImageData(awtImage.getWidth(), awtImage.getHeight(), 32, palette);
@@ -398,10 +392,32 @@ class ViewerCanvas extends Canvas {
         }
         if(document.isPDF()) {
             PDFReader pdf = document.getPDF();
-            return new Image(getDisplay(), pdf.setZoom(new Float(viewer.getZoom())).getPageImageData(viewer.getPageIndex()));
+            // Get the rendered image
+            BufferedImage image = pdf.setZoom(new Float(viewer.getZoom())).getPageImage(viewer.getPageIndex());
+            // Draw border
+            java.awt.image.BufferedImage pageImage = (BufferedImage) drawBorder(image);
+            // Convert to SWT and show the image
+            return new Image(getDisplay(), SWTUtil.convertToSWT(pageImage));
         }
         
         return null;
+    }
+    
+    /**
+     * Draws a border around the image using java's own graphix API.
+     * @param image - the image to draw borders on
+     * @return the image itself
+     */
+    private java.awt.image.BufferedImage drawBorder(java.awt.image.BufferedImage image) {
+        Graphics2D g2d = (Graphics2D) image.getGraphics();
+        try {
+            g2d.setColor(Color.black);
+            g2d.setStroke(new BasicStroke(1));
+            g2d.drawRect(0, 0, image.getWidth() - 1, image.getHeight() - 1);
+        } finally {
+            g2d.dispose();
+        }
+        return image;
     }
 
     /**
