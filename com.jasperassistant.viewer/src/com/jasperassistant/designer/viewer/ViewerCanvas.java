@@ -719,9 +719,8 @@ class ViewerCanvas extends Canvas {
         if (link.getHyperlinkTypeValue().equals(HyperlinkTypeEnum.REFERENCE)) {
             notifyHyperlinkListeners(link);
         } else if (link.getHyperlinkTypeValue().equals(HyperlinkTypeEnum.LOCAL_ANCHOR)) {
-            Map anchorIndexes = viewer.getDocument().getJasper().getAnchorIndexes();
-            JRPrintAnchorIndex anchorIndex = (JRPrintAnchorIndex) anchorIndexes.get(currentLink
-                    .getHyperlinkAnchor());
+            Map<String, JRPrintAnchorIndex> anchorIndexes = viewer.getDocument().getJasper().getAnchorIndexes();
+            JRPrintAnchorIndex anchorIndex = anchorIndexes.get(currentLink.getHyperlinkAnchor());
             if (anchorIndex != null) {
                 if (anchorIndex.getPageIndex() != viewer.getPageIndex()) {
                     viewer.setPageIndex(anchorIndex.getPageIndex());
