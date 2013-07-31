@@ -728,8 +728,7 @@ class ViewerCanvas extends Canvas {
                 }
 
                 if (reportImage != null) {
-                    setHorizontalSelection((int) (anchorIndex.getElement().getX() * viewer
-                            .getZoom()));
+                    setHorizontalSelection((int) (anchorIndex.getElement().getX() * viewer.getZoom()));
                     setVerticalSelection((int) (anchorIndex.getElement().getY() * viewer.getZoom()));
                     repaint();
                 }
