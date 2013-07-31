@@ -26,7 +26,8 @@ Export-Package: com.jasperassistant.designer.viewer;
  com.jasperassistant.designer.viewer.util;uses:="net.sf.jasperreports.engine.export,net.sf.jasperreports.engine"
 Bundle-ClassPath: .,
  lib/icepdf-core.jar
-Import-Package: net.sf.jasperreports.engine,
+Import-Package: com.lowagie.text.pdf,
+ net.sf.jasperreports.engine,
  net.sf.jasperreports.engine.export,
  net.sf.jasperreports.engine.type,
  net.sf.jasperreports.engine.util,
