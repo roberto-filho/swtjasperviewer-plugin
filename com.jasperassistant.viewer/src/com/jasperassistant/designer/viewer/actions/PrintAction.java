@@ -35,6 +35,7 @@ import org.eclipse.swt.widgets.Display;
 
 import com.jasperassistant.designer.viewer.IReportViewer;
 import com.jasperassistant.designer.viewer.pdf.PDFReader;
+import com.jasperassistant.designer.viewer.util.LoggingUtil;
 
 /**
  * Print action.
@@ -99,7 +100,7 @@ public class PrintAction extends AbstractReportViewerAction {
 					        JasperPrintManager.printReport(PDFReader.class.cast(getReportViewer().getDocument().getPDF()).getInputStream(), true);
 					}
 				} catch (Throwable e) {
-					e.printStackTrace();
+				    LoggingUtil.logError("Erro ao imprimir o arquivo.", e);
                     MessageDialog.openError(display.getActiveShell(), Messages.getString("PrintAction.printingError.title"), //$NON-NLS-1$
                             MessageFormat.format(Messages.getString("PrintAction.printingError.message"), new Object[] { e.getMessage() })); //$NON-NLS-1$
 				}

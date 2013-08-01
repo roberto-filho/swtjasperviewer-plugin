@@ -23,8 +23,6 @@ import static java.lang.String.format;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import net.sf.jasperreports.engine.export.JRExportProgressMonitor;
 
@@ -36,6 +34,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 
 import com.jasperassistant.designer.viewer.IReportViewer;
+import com.jasperassistant.designer.viewer.util.LoggingUtil;
 
 /**
  * Base class for export actions
@@ -115,7 +114,7 @@ public abstract class AbstractExportAction extends AbstractReportViewerAction {
 			try {
 				export(file);
 			} catch (Throwable e) {
-				Logger.getAnonymousLogger("com.jasperassistant.designer.viewer").log(Level.SEVERE, format("Erro ao exportar o arquivo [%s].", filePath), e);
+				LoggingUtil.logError(format("Erro ao exportar o arquivo [%s].", filePath), e);
 			}
 		}
 	}
