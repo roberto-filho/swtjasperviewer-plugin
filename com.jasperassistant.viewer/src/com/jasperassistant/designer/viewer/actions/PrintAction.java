@@ -70,7 +70,7 @@ public class PrintAction extends AbstractReportViewerAction {
 	 */
 	@Override
 	protected boolean calculateEnabled() {
-		return getReportViewer().hasDocument();
+		return getReportViewer().getDocument().isJasper();
 	}
 
 	/**

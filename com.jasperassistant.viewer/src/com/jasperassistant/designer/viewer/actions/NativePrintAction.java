@@ -46,6 +46,7 @@ import org.eclipse.swt.widgets.Display;
 
 import com.jasperassistant.designer.viewer.IReportDocument;
 import com.jasperassistant.designer.viewer.IReportViewer;
+import com.jasperassistant.designer.viewer.util.LoggingUtil;
 
 /**
  * Print action. Unlike the
@@ -106,7 +107,7 @@ public class NativePrintAction extends AbstractReportViewerAction {
             try {
                 printDocument(display, printData);
             } catch (PrinterException e) {
-                e.printStackTrace();
+                LoggingUtil.logError("Erro ao imprimir.", e);
                 MessageDialog.openError(display.getActiveShell(),
                                 Messages.getString("PrintAction.printingError.title"), //$NON-NLS-1$
                                 MessageFormat.format(
