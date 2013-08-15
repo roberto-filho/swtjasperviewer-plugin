@@ -24,7 +24,6 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.export.JRExportProgressMonitor;
 import net.sf.jasperreports.engine.export.JRXlsExporter;
-import net.sf.jasperreports.engine.export.JRXlsExporterParameter;
 
 import org.eclipse.jface.resource.ImageDescriptor;
 
@@ -38,11 +37,9 @@ import com.jasperassistant.designer.viewer.util.Compatibility;
  */
 public class ExportAsSingleXlsAction extends AbstractExportAction {
 
-	private static final ImageDescriptor ICON = ImageDescriptor.createFromFile(
-			ExportAsSingleXlsAction.class, "images/save.gif"); //$NON-NLS-1$
+	private static final ImageDescriptor ICON = ImageDescriptor.createFromFile(ExportAsSingleXlsAction.class, "images/save.gif"); //$NON-NLS-1$
 
-	private static final ImageDescriptor DISABLED_ICON = ImageDescriptor
-			.createFromFile(ExportAsSingleXlsAction.class, "images/saved.gif"); //$NON-NLS-1$
+	private static final ImageDescriptor DISABLED_ICON = ImageDescriptor.createFromFile(ExportAsSingleXlsAction.class, "images/saved.gif"); //$NON-NLS-1$
 
 	/**
 	 * @see AbstractExportAction#AbstractExportAction(IReportViewer)
@@ -63,10 +60,11 @@ public class ExportAsSingleXlsAction extends AbstractExportAction {
 	/**
 	 * @see com.jasperassistant.designer.viewer.actions.AbstractExportAction#exportWithProgress(java.io.File, net.sf.jasperreports.engine.export.JRExportProgressMonitor)
 	 */
+	@Override
 	protected void exportWithProgress(File file, JRExportProgressMonitor monitor)
 			throws JRException {
 		JRXlsExporter exporter = new JRXlsExporter();
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, getReportViewer().getDocument()); 
+		exporter.setParameter(JRExporterParameter.JASPER_PRINT, getReportViewer().getDocument().getJasper()); 
 		exporter.setParameter(JRExporterParameter.OUTPUT_FILE, file);
 		exporter.setParameter(JRExporterParameter.PROGRESS_MONITOR, monitor);
 //		exporter.setParameter(JRXlsExporterParameter.IS_ONE_PAGE_PER_SHEET, Boolean.FALSE);
